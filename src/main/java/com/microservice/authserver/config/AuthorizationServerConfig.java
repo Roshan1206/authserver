@@ -60,7 +60,7 @@ public class AuthorizationServerConfig {
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(AbstractHttpConfigurer::disable)
 //                Apply OAuth2 authorization server configuration
-                .with(authorizationServerConfigurer, Customizer.withDefaults())
+                .with(authorizationServerConfigurer, configurer -> configurer.oidc(Customizer.withDefaults()))
                 .exceptionHandling(exception -> exception
                         .defaultAuthenticationEntryPointFor(new LoginUrlAuthenticationEntryPoint("/login"), new MediaTypeRequestMatcher(MediaType.TEXT_HTML)));
 
