@@ -24,6 +24,8 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -149,6 +151,7 @@ public class AuthorizationServerConfig {
     /**
      * Generates RSA key pair for JWT signing.
      * Private key signs tokens, public key validates them.
+     * Creating Keys
      */
     private static KeyPair generateRsaKey() {
         KeyPair keyPair;
@@ -164,7 +167,19 @@ public class AuthorizationServerConfig {
 
 
     /**
+     * JWT Encoder for creating tokens in your custom endpoints
+     * This uses the same RSA keys as your OAuth server
+     * Using Above created keys to create token
+     */
+    @Bean
+    public JwtEncoder jwtEncoder(JWKSource<SecurityContext> jwkSource){
+        return new NimbusJwtEncoder(jwkSource);
+    }
+
+
+    /**
      * JWT Decoder for validating tokens created by this Authorization Server
+     * Using Above created Keys to validate token
      */
     @Bean
     public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource){

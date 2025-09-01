@@ -1,6 +1,8 @@
 package com.microservice.authserver.controller;
 
 import com.microservice.authserver.dto.LoginRequest;
+import com.microservice.authserver.dto.TokenResponse;
+import com.microservice.authserver.service.OAuth2TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,25 +24,13 @@ import java.util.Map;
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private RegisteredClientRepository registeredClientRepository;
+    private OAuth2TokenService oAuth2TokenService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest){
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
-            );
-
-            String[] roles = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).toArray(String[]::new);
-            Map<String, Object> response = new HashMap<>();
-            response.put("status", "success");
-            response.put("message", "Authentication successful");
-            response.put("username", authentication.getName());
-            response.put("authorities", roles);
-            return ResponseEntity.ok(response);
+            TokenResponse tokenResponse = oAuth2TokenService.generateAccessToken(loginRequest);
+            return ResponseEntity.ok(tokenResponse);
         }catch (AuthenticationException ex){
             Map<String, String> error = new HashMap<>();
             error.put("status", "error");
