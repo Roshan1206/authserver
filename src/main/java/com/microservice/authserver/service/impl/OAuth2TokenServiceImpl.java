@@ -4,6 +4,7 @@ import com.microservice.authserver.dto.LoginRequest;
 import com.microservice.authserver.dto.TokenResponse;
 import com.microservice.authserver.service.OAuth2TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -30,6 +31,9 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
 
     @Autowired
     private JwtDecoder jwtDecoder;
+
+    @Value("${issuer.url}")
+    private String issuer;
 
 
     /**
@@ -74,12 +78,12 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
         Instant expiry = now.plus(1, ChronoUnit.HOURS);
 
         JwtClaimsSet claimsSet = JwtClaimsSet.builder()
-                .issuer("http://localhost:9001")
+                .issuer(issuer)
                 .subject(username)
                 .audience(List.of("microservice-client-id"))
                 .issuedAt(now)
                 .expiresAt(expiry)
-                .claim("authorities", authorities)
+                .claim("roles", authorities)
                 .claim("token_type", "access")
                 .build();
 
@@ -99,7 +103,7 @@ public class OAuth2TokenServiceImpl implements OAuth2TokenService {
         Instant expiry = now.plus(30, ChronoUnit.DAYS);
 
         JwtClaimsSet claimsSet = JwtClaimsSet.builder()
-                .issuer("http://localhost:9001")
+                .issuer(issuer)
                 .subject(username)
                 .issuedAt(now)
                 .expiresAt(expiry)

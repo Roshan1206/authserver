@@ -5,6 +5,7 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -33,6 +34,7 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -43,11 +45,16 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
 import java.util.UUID;
 
 @Configuration
 @EnableWebSecurity
 public class AuthorizationServerConfig {
+
+
+    @Value("${issuer.url}")
+    private String issuer;
 
     @Bean
     @Order(1)
@@ -84,6 +91,12 @@ public class AuthorizationServerConfig {
 
     @Bean
     public RegisteredClientRepository registeredClientRepository() {
+        TokenSettings tokenSettings = TokenSettings.builder()
+                .accessTokenTimeToLive(Duration.ofMinutes(15))   // short access token
+                .refreshTokenTimeToLive(Duration.ofDays(30))     // long refresh token
+                .reuseRefreshTokens(true)                        // allow reuse (false = rotation)
+                .build();
+//        for users
         RegisteredClient oidcClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("microservice-client-id")
                 .clientSecret(passwordEncoder().encode("secret"))
@@ -98,9 +111,21 @@ public class AuthorizationServerConfig {
                 .scope("read")
                 .scope("write")
                 .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+                .tokenSettings(tokenSettings)
                 .build();
 
-        return new InMemoryRegisteredClientRepository(oidcClient);
+//        for services to communicate with each other
+        RegisteredClient accountsServiceClient = RegisteredClient.withId(UUID.randomUUID().toString())
+                .clientId("accounts-service")
+                .clientSecret(passwordEncoder().encode("accounts-secret"))
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .scope("service.read")
+                .scope("service.write")
+                .scope("internal.api")
+                .build();
+
+        return new InMemoryRegisteredClientRepository(oidcClient, accountsServiceClient);
     }
 
 
@@ -192,7 +217,7 @@ public class AuthorizationServerConfig {
      */
     @Bean
     public AuthorizationServerSettings authorizationServerSettings(){
-        return AuthorizationServerSettings.builder().issuer("http://localhost:9001").build();
+        return AuthorizationServerSettings.builder().issuer(issuer).build();
     }
 
 

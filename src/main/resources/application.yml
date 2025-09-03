@@ -5,6 +5,9 @@ spring:
   application:
     name: authserver
 
+issuer:
+  url: http://localhost:9001
+
 logging:
   level:
     org.springframework.security: DEBUG
